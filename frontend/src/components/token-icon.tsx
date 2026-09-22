@@ -1,7 +1,9 @@
 "use client";
 
+import { useReadContract } from "wagmi";
 import { useTokenAvatar } from "@/lib/avatars";
-import { tokenColors } from "@/lib/launchpad";
+import { launchTokenAbi, tokenColors } from "@/lib/launchpad";
+import type { Address } from "viem";
 
 const sizes = {
   sm: "h-9 w-9 rounded-lg text-xs",
@@ -14,11 +16,18 @@ export function TokenIcon({
   symbol,
   size = "md",
 }: {
-  address: string;
+  address: Address;
   symbol?: string;
   size?: keyof typeof sizes;
 }) {
-  const image = useTokenAvatar(address);
+  const { data: onChainImage } = useReadContract({
+    address,
+    abi: launchTokenAbi,
+    functionName: "imageUri",
+  });
+  const stored = useTokenAvatar(address);
+  const image =
+    onChainImage && onChainImage.length > 0 ? onChainImage : stored;
   const [from, to] = tokenColors(address);
 
   if (image) {

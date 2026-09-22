@@ -2,7 +2,7 @@ import { formatEther, formatUnits } from "viem";
 
 /** Address of the deployed Launchpad on Base Sepolia. Override via NEXT_PUBLIC_LAUNCHPAD_ADDRESS. */
 export const LAUNCHPAD_ADDRESS = (process.env.NEXT_PUBLIC_LAUNCHPAD_ADDRESS ??
-  "0x17818f88a3B3064A2448Ad54cb2d1cfC5C3b59A2") as `0x${string}`;
+  "0xc56C4c759c9406545AFd8f8766efF2A782840dA0") as `0x${string}`;
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -135,6 +135,7 @@ export const launchpadAbi = [
       { name: "slope", type: "uint256" },
       { name: "buyTaxBps", type: "uint256" },
       { name: "sellTaxBps", type: "uint256" },
+      { name: "imageUri", type: "string" },
     ],
     outputs: [
       { name: "token", type: "address" },
@@ -186,6 +187,7 @@ export const launchpadAbi = [
       { name: "slope", type: "uint256", indexed: false },
       { name: "buyTaxBps", type: "uint256", indexed: false },
       { name: "sellTaxBps", type: "uint256", indexed: false },
+      { name: "imageUri", type: "string", indexed: false },
     ],
   },
   {
@@ -223,6 +225,13 @@ export const launchTokenAbi = [
   {
     type: "function",
     name: "symbol",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "string" }],
+  },
+  {
+    type: "function",
+    name: "imageUri",
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "string" }],

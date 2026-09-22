@@ -22,6 +22,7 @@ contract LaunchpadTest is Test {
     uint256 internal constant CREATION_FEE = 0.001 ether;
     uint256 internal constant BUY_TAX_BPS = 100; // 1%
     uint256 internal constant SELL_TAX_BPS = 100; // 1%
+    string internal constant IMAGE_URI = "data:image/svg+xml;base64,TE9DTwo=";
 
     function setUp() public {
         launchpad = new Launchpad(owner, feeRecipient, CREATION_FEE);
@@ -31,7 +32,7 @@ contract LaunchpadTest is Test {
 
         vm.prank(creator);
         (address tokenAddr, uint256 id) = launchpad.createLaunch{value: CREATION_FEE}(
-            "Test Token", "TEST", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "Test Token", "TEST", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
         token = LaunchToken(tokenAddr);
         assertEq(id, 1);
@@ -48,6 +49,7 @@ contract LaunchpadTest is Test {
         assertEq(token.balanceOf(address(launchpad)), SUPPLY);
         assertEq(token.creator(), creator);
         assertEq(token.launchpad(), address(launchpad));
+        assertEq(token.imageUri(), IMAGE_URI);
 
         (
             address t,
@@ -80,12 +82,12 @@ contract LaunchpadTest is Test {
         vm.recordLogs();
         vm.prank(alice);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "Second", "SEC", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "Second", "SEC", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, ""
         );
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 sig = keccak256(
-            "Launched(uint256,address,address,string,string,uint256,uint256,uint256,uint256,uint256)"
+            "Launched(uint256,address,address,string,string,uint256,uint256,uint256,uint256,uint256,string)"
         );
         bool found;
         for (uint256 i = 0; i < logs.length; i++) {
@@ -105,45 +107,60 @@ contract LaunchpadTest is Test {
     function test_RevertWhen_CreationFeeWrong() public {
         vm.prank(alice);
         vm.expectRevert(Launchpad.InsufficientValue.selector);
-        launchpad.createLaunch("X", "X", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS);
+        launchpad.createLaunch(
+            "X", "X", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
+        );
     }
 
     function test_RevertWhen_InvalidParams() public {
         vm.startPrank(alice);
         vm.expectRevert(Launchpad.InvalidParams.selector);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "", "X", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "", "X", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
 
         vm.expectRevert(Launchpad.InvalidParams.selector);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "X", "X", 0, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "X", "X", 0, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
 
         vm.expectRevert(Launchpad.InvalidParams.selector);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "X", "X", 1 ether + 1, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "X", "X", 1 ether + 1, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
 
         vm.expectRevert(Launchpad.InvalidParams.selector);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "X", "X", SUPPLY, 0, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "X", "X", SUPPLY, 0, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
 
         vm.expectRevert(Launchpad.InvalidParams.selector);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "X", "X", SUPPLY, BASE_PRICE, 0, BUY_TAX_BPS, SELL_TAX_BPS
+            "X", "X", SUPPLY, BASE_PRICE, 0, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
         vm.stopPrank();
+    }
+
+    function test_RevertWhen_ImageTooLarge() public {
+        bytes memory big = new bytes(launchpad.MAX_IMAGE_BYTES() + 1);
+        vm.prank(alice);
+        vm.expectRevert(Launchpad.InvalidParams.selector);
+        launchpad.createLaunch{value: CREATION_FEE}(
+            "Big", "BIG", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, string(big)
+        );
     }
 
     function test_RevertWhen_TaxTooHigh() public {
         vm.startPrank(alice);
         vm.expectRevert(Launchpad.FeeTooHigh.selector);
-        launchpad.createLaunch{value: CREATION_FEE}("X", "X", SUPPLY, BASE_PRICE, SLOPE, 1_001, 0);
+        launchpad.createLaunch{value: CREATION_FEE}(
+            "X", "X", SUPPLY, BASE_PRICE, SLOPE, 1_001, 0, IMAGE_URI
+        );
 
         vm.expectRevert(Launchpad.FeeTooHigh.selector);
-        launchpad.createLaunch{value: CREATION_FEE}("X", "X", SUPPLY, BASE_PRICE, SLOPE, 0, 1_001);
+        launchpad.createLaunch{value: CREATION_FEE}(
+            "X", "X", SUPPLY, BASE_PRICE, SLOPE, 0, 1_001, IMAGE_URI
+        );
         vm.stopPrank();
     }
 
@@ -154,7 +171,7 @@ contract LaunchpadTest is Test {
         vm.deal(bob, 10 ether);
         vm.prank(bob);
         (address tokenAddr,) = launchpad.createLaunch{value: CREATION_FEE}(
-            "Taxed", "TAX", SUPPLY, BASE_PRICE, SLOPE, buyTax, sellTax
+            "Taxed", "TAX", SUPPLY, BASE_PRICE, SLOPE, buyTax, sellTax, IMAGE_URI
         );
         uint256 id = launchpad.tokenToId(tokenAddr);
 
@@ -363,10 +380,10 @@ contract LaunchpadTest is Test {
     function test_GetLaunches() public {
         vm.startPrank(alice);
         launchpad.createLaunch{value: CREATION_FEE}(
-            "Second", "SEC", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "Second", "SEC", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
         launchpad.createLaunch{value: CREATION_FEE}(
-            "Third", "THR", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS
+            "Third", "THR", SUPPLY, BASE_PRICE, SLOPE, BUY_TAX_BPS, SELL_TAX_BPS, IMAGE_URI
         );
         vm.stopPrank();
 

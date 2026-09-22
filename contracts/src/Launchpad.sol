@@ -21,6 +21,7 @@ contract Launchpad is Ownable, ReentrancyGuard {
     uint256 public constant WAD = 1e18;
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint256 public constant MAX_TRADE_FEE_BPS = 1_000; // 10%
+    uint256 public constant MAX_IMAGE_BYTES = 200_000; // 200 kB, keeps data-URI avatars sane
 
     struct Launch {
         address token;
@@ -66,7 +67,8 @@ contract Launchpad is Ownable, ReentrancyGuard {
         uint256 basePrice,
         uint256 slope,
         uint256 buyTaxBps,
-        uint256 sellTaxBps
+        uint256 sellTaxBps,
+        string imageUri
     );
     event Bought(
         uint256 indexed id, address indexed buyer, uint256 tokensOut, uint256 ethSpent, uint256 fee
@@ -108,6 +110,8 @@ contract Launchpad is Ownable, ReentrancyGuard {
     /// @param slope Price increase in wei per whole token sold.
     /// @param buyTaxBps Tax charged on buys, in basis points.
     /// @param sellTaxBps Tax charged on sells, in basis points.
+    /// @param imageUri Avatar embedded on-chain for the token (data URI or URL, empty allowed
+    ///        before a default is generated off-chain).
     function createLaunch(
         string calldata name,
         string calldata symbol,
@@ -115,17 +119,19 @@ contract Launchpad is Ownable, ReentrancyGuard {
         uint256 basePrice,
         uint256 slope,
         uint256 buyTaxBps,
-        uint256 sellTaxBps
+        uint256 sellTaxBps,
+        string calldata imageUri
     ) external payable nonReentrant returns (address token, uint256 id) {
         if (bytes(name).length == 0 || bytes(symbol).length == 0) {
             revert InvalidParams();
         }
+        if (bytes(imageUri).length > MAX_IMAGE_BYTES) revert InvalidParams();
         if (totalSupply == 0 || totalSupply % WAD != 0) revert InvalidParams();
         if (basePrice == 0 || slope == 0) revert InvalidParams();
         if (buyTaxBps > MAX_TRADE_FEE_BPS || sellTaxBps > MAX_TRADE_FEE_BPS) revert FeeTooHigh();
         if (msg.value != creationFee) revert InsufficientValue();
 
-        LaunchToken created = new LaunchToken(name, symbol, totalSupply, msg.sender);
+        LaunchToken created = new LaunchToken(name, symbol, totalSupply, msg.sender, imageUri);
         token = address(created);
         id = ++launchCount;
 
@@ -157,7 +163,8 @@ contract Launchpad is Ownable, ReentrancyGuard {
             basePrice,
             slope,
             buyTaxBps,
-            sellTaxBps
+            sellTaxBps,
+            imageUri
         );
     }
 

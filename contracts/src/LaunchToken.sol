@@ -13,6 +13,10 @@ contract LaunchToken is ERC20 {
     /// @notice The address that created the launch.
     address public immutable creator;
 
+    /// @notice The token's avatar, embedded on-chain as a data URI (or IPFS/HTTP URI).
+    ///         Written once at deployment by the constructor.
+    string public imageUri;
+
     error NotLaunchpad();
     error ZeroAddress();
 
@@ -21,12 +25,17 @@ contract LaunchToken is ERC20 {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, uint256 totalSupply_, address creator_)
-        ERC20(name_, symbol_)
-    {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 totalSupply_,
+        address creator_,
+        string memory imageUri_
+    ) ERC20(name_, symbol_) {
         if (creator_ == address(0)) revert ZeroAddress();
         launchpad = msg.sender;
         creator = creator_;
+        imageUri = imageUri_;
         _mint(msg.sender, totalSupply_);
     }
 

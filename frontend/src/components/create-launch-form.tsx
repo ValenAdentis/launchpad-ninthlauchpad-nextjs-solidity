@@ -9,7 +9,6 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { setTokenAvatar } from "@/lib/avatars";
 import { setTokenCreatedAt } from "@/lib/created-at";
 import {
   LAUNCHPAD_ADDRESS,
@@ -44,6 +43,24 @@ function percentToBps(value: string): number | null {
 }
 
 const MAX_IMAGE_BYTES = 2_000_000;
+const MAX_EMBEDDED_IMAGE_BYTES = 200_000; // must match Launchpad.MAX_IMAGE_BYTES
+
+/** Deterministic SVG avatar (data URI) used when no image is uploaded, so every token
+ *  embeds an avatar on-chain. */
+function defaultAvatarImageUri(name: string, symbol: string): string {
+  const hue = hashHue(name, symbol);
+  const from = `hsl(${hue} 85% 55%)`;
+  const to = `hsl(${(hue + 50) % 360} 85% 60%)`;
+  const label = (symbol.trim() || name.trim() || "?").slice(0, 4).toUpperCase();
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">` +
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/>` +
+    `</linearGradient></defs><rect width="256" height="256" fill="url(#g)"/>` +
+    `<text x="50%" y="54%" dy=".35em" text-anchor="middle" font-family="system-ui, sans-serif" ` +
+    `font-size="96" font-weight="800" fill="rgba(255,255,255,0.94)">${label}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
 /** Downscale an uploaded image to a small square-ish webp/png data URI. */
 function resizeToDataUri(src: string, size = 256): Promise<string | null> {
@@ -105,9 +122,6 @@ export function CreateLaunchForm() {
         });
         if (decoded.eventName === "Launched") {
           setTokenCreatedAt(decoded.args.id);
-          if (image) {
-            setTokenAvatar(decoded.args.token as `0x${string}`, image);
-          }
           router.push(`/launch/${decoded.args.id}`);
           return;
         }
@@ -115,7 +129,7 @@ export function CreateLaunchForm() {
         // ignore logs from other contracts
       }
     }
-  }, [isSuccess, receipt, router, image]);
+  }, [isSuccess, receipt, router]);
 
   const parsed = useMemo(() => {
     const totalSupply = (() => {
@@ -191,11 +205,25 @@ export function CreateLaunchForm() {
         throw new Error(`Buy and sell tax must be between 0% and ${MAX_TAX_PERCENT}%`);
       }
 
+      const imageUri = image ?? defaultAvatarImageUri(name.trim(), symbol.trim());
+      if (new TextEncoder().encode(imageUri).length > MAX_EMBEDDED_IMAGE_BYTES) {
+        throw new Error("Embedded image is too large — use a simpler image (on-chain limit is 200 kB)");
+      }
+
       writeContract({
         address: LAUNCHPAD_ADDRESS,
         abi: launchpadAbi,
         functionName: "createLaunch",
-        args: [name.trim(), symbol.trim().toUpperCase(), totalSupply, bp, sl, BigInt(buyBps), BigInt(sellBps)],
+        args: [
+          name.trim(),
+          symbol.trim().toUpperCase(),
+          totalSupply,
+          bp,
+          sl,
+          BigInt(buyBps),
+          BigInt(sellBps),
+          imageUri,
+        ],
         value: creationFee ?? 0n,
       });
     } catch (err) {
