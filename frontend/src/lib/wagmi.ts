@@ -8,7 +8,7 @@ const projectId =
 export const wagmiConfig = getDefaultConfig({
   appName: "LaunchPad Simple",
   projectId,
-  chains: [base, baseSepolia, localhost],
+  chains: [baseSepolia, base, localhost],
   transports: {
     [base.id]: http(),
     [baseSepolia.id]: http(),

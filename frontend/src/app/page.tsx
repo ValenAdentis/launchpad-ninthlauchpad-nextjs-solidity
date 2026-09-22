@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
-import { useReadContract } from "wagmi";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useAccount, useReadContract } from "wagmi";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { Header } from "@/components/header";
 import { MarketTable } from "@/components/market-table";
 import { SetupNotice } from "@/components/setup-notice";
@@ -31,6 +33,11 @@ const HOW_IT_WORKS = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const [connectHint, setConnectHint] = useState(false);
+
   const { data, isLoading } = useReadContract({
     address: LAUNCHPAD_ADDRESS,
     abi: launchpadAbi,
@@ -75,9 +82,17 @@ export default function Home() {
             </p>
 
             <div className="mt-6 flex flex-col items-start gap-2">
-              <Link
-                href="/create"
-                className="button-shine group relative inline-flex h-14 items-center gap-3 rounded-2xl bg-[#6CFF32] px-8 text-lg font-black text-[#0a0a0a] shadow-[0_18px_40px_-14px_rgba(108,255,50,0.8)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_24px_52px_-12px_rgba(108,255,50,0.95)]"
+              <button
+                type="button"
+                onClick={() => {
+                  if (isConnected) {
+                    router.push("/create");
+                  } else {
+                    setConnectHint(true);
+                    openConnectModal?.();
+                  }
+                }}
+                className="button-shine group relative inline-flex h-14 cursor-pointer items-center gap-3 rounded-2xl bg-[#6CFF32] px-8 text-lg font-black text-[#0a0a0a] shadow-[0_18px_40px_-14px_rgba(108,255,50,0.8)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_24px_52px_-12px_rgba(108,255,50,0.95)]"
               >
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#0a0a0a] text-[#6CFF32] transition duration-300 group-hover:scale-110 group-hover:rotate-6">
                   <svg
@@ -111,7 +126,12 @@ export default function Home() {
                   <path d="M5 12h14" />
                   <path d="m12 5 7 7-7 7" />
                 </svg>
-              </Link>
+              </button>
+              {!isConnected && connectHint && (
+                <p className="animate-float-in rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm font-semibold text-amber-200">
+                  Connect your wallet to create a token.
+                </p>
+              )}
               <p className="text-sm text-sage/50">
                 No listing fee · your token is tradable the moment it launches
               </p>
