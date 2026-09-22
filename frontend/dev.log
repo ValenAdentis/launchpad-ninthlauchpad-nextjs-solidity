@@ -1,0 +1,23 @@
+
+> frontend@0.1.0 dev
+> next dev --hostname 0.0.0.0
+
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+- Environments: .env.local
+✓ Ready in 3.8s
+✓ Running next.config.ts took 43ms
+⚠ Slow filesystem detected. The benchmark took 210ms. If \\?\D:\Task\LaunchPad Simple\frontend\.next\dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+
+○ Compiling / ...
+(node:6540) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ Finished filesystem cache database compaction in 15.3s
+ GET / 200 in 3.5s (next.js: 2.7s, application-code: 798ms)
+ GET / 200 in 43ms (next.js: 8ms, application-code: 35ms)
+ GET / 200 in 122ms (next.js: 21ms, application-code: 100ms)
+ HEAD / 200 in 1939ms (next.js: 84ms, application-code: 1855ms)
+[browser] Lit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+  Reload env: .env.local
