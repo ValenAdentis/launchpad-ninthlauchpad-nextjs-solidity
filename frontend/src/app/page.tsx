@@ -149,24 +149,6 @@ export default function Home() {
                 {sorted.length} token{sorted.length === 1 ? "" : "s"} on the curve
               </span>
             </div>
-            <Link
-              href="/create"
-              className="button-shine inline-flex h-11 items-center gap-2 rounded-xl bg-[#6CFF32] px-5 text-sm font-extrabold text-[#0a0a0a] shadow-[0_12px_30px_-10px_rgba(108,255,50,0.6)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-              >
-                <path d="M12 5v14" />
-                <path d="M5 12h14" />
-              </svg>
-              Create Token
-            </Link>
           </div>
           {sorted.length === 0 ? (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">

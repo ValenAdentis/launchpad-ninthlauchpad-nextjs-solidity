@@ -49,24 +49,6 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/create"
-            className="button-shine relative inline-flex h-10 items-center gap-2 rounded-full bg-[#6CFF32] px-6 text-sm font-extrabold text-[#0a0a0a] shadow-[0_10px_26px_-10px_rgba(108,255,50,0.75)] transition duration-300 hover:-translate-y-0.5 hover:brightness-110"
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.6"
-              strokeLinecap="round"
-            >
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
-            Create Token
-          </Link>
           <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
         </div>
       </div>
